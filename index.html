@@ -2,80 +2,51 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>族語大富翁擲骰遊戲</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>族語大富翁遊戲首頁</title>
   <style>
-    .grid-container {
-      display: grid;
-      grid-template-areas:
-        'a b c d e f'
-        'x . . . . g'
-        'w . . . . h'
-        'v . . . . i'
-        'u . . . . j'
-        't s r q p o';
-      grid-template-columns: repeat(6, 1fr);
-      grid-template-rows: repeat(6, 80px);
-      gap: 2px;
-      width: 768px;
-      margin: 0 auto;
-    }
-    .grid-item {
+    body {
+      background-color: #fef3c7;
+      font-family: 'Segoe UI', sans-serif;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      background-color: #f9f7ec;
-      border: 2px solid #885f3a;
-      font-weight: bold;
-      font-size: 14px;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
     }
-    .grid-item button {
-      width: 100%;
-      height: 100%;
-      border: none;
-      background-color: #ffe8b3;
-      color: #4a2e0e;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
+    h1 {
+      color: #b45309;
+      font-size: 2.5rem;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      margin: 1rem 0;
+    }
+    a {
+      text-decoration: none;
+      background-color: #f59e0b;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1.2rem;
       transition: background-color 0.3s;
     }
-    .grid-item button:hover {
-      background-color: #ffcc66;
+    a:hover {
+      background-color: #d97706;
     }
   </style>
 </head>
 <body>
-  <h2 style="text-align:center">族語大富翁：圍一圈語音格子遊戲</h2>
-  <div class="grid-container">
-    <div class="grid-item" style="grid-area: a;"><button style="background-color:#8d6e63; color:white;" onclick="playSound('sefi')">sefi</button></div>
-    <div class="grid-item" style="grid-area: b;"><button onclick="playSound('rayray')">rayray</button></div>
-    <div class="grid-item" style="grid-area: c;"><button style="background-color:#fb8c00; color:white;" onclick="playSound('ko')">ko</button></div>
-    <div class="grid-item" style="grid-area: d;"><button style="background-color:#8d6e63; color:white;" onclick="playSound('kakomaenan')">Kakomaenan</button></div>
-    <div class="grid-item" style="grid-area: e;"><button onclick="playSound('lalosidan')">lalosidan</button></div>
-    <div class="grid-item" style="grid-area: f; background-color: #e63946;"><button style="background-color:#e63946; color:white;" onclick="playSound('mikesi')">mikesi'</button></div>
-    <div class="grid-item" style="grid-area: g;"><button style="background-color:#f48fb1; color:white;" onclick="playSound('malikoda')">malikoda</button></div>
-    <div class="grid-item" style="grid-area: h;"><button style="background-color:#8d6e63; color:white;" onclick="playSound('taliyok_no_niyaro')">taliyok no niyaro'</button></div>
-    <div class="grid-item" style="grid-area: i;"><button style="background-color:#f48fb1; color:white;" onclick="playSound('makero')">makero</button></div>
-    <div class="grid-item" style="grid-area: j;"><button style="background-color:#66bb6a; color:white;" onclick="playSound('romadiw')">romadiw</button></div>
-    <div class="grid-item" style="grid-area: o;"><button style="background-color:#ba68c8; color:white;" onclick="playSound('pafata')">pafata’an</button></div>
-    <div class="grid-item" style="grid-area: p; background-color: #e63946;"><button style="background-color:#e63946; color:white;" onclick="playSound('misahafay')">misahafay</button></div>
-    <div class="grid-item" style="grid-area: q;"><button style="background-color:#ba68c8; color:white;" onclick="playSound('panemnem')">panemnem</button></div>
-    <div class="grid-item" style="grid-area: r;"><button onclick="playSound('tahidang')">tahidang</button></div>
-    <div class="grid-item" style="grid-area: s;"><button style="background-color:#ba68c8; color:white;" onclick="playSound('pacaedong')">pacaedong</button></div>
-    <div class="grid-item" style="grid-area: t; background-color: #e63946;"><button style="background-color:#e63946; color:white;" onclick="playSound('misatora')">misatora</button></div>
-    <div class="grid-item" style="grid-area: u;"><button onclick="playSound('kaetohay')">kaetohay</button></div>
-    <div class="grid-item" style="grid-area: v;"><button style="background-color:#fdd835; color:black;" onclick="playSound('miromromay')">miromromay</button></div>
-    <div class="grid-item" style="grid-area: w; background-color: #e63946;"><button style="background-color:#e63946; color:white;" onclick="playSound('mirekal')">mirekal</button></div>
-    <div class="grid-item" style="grid-area: x;"><button onclick="playSound('kilomaan')">kiloma’an</button></div>
-  </div>
-  <audio id="audio-player" src=""></audio>
-  <script>
-    function playSound(word) {
-      const audio = document.getElementById("audio-player");
-      audio.src = `audio/${word}.mp3`;
-      audio.play();
-    }
-  </script>
+  <h1>🎲 族語大富翁遊戲選單</h1>
+  <ul>
+    <li><a href="index.html">▶ 單人遊戲版</a></li>
+    <li><a href="score-mode.html">👥 四人計分版（多玩家）</a></li>
+  </ul>
 </body>
 </html>
