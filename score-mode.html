@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>族語大富翁擲骰遊戲 (四人計分版)</title>
+    <!-- 引入 Tone.js 用於產生音效 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        /* 整體頁面樣式 */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #e2e8f0;
+            font-family: 'Times New Roman', serif;
+            margin: 0;
+            padding: 1rem;
+            overflow: hidden;
+        }
+        
+        #game-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 玩家登入畫面的樣式 */
+        #setup-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.3s ease;
+        }
+        #setup-modal.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .setup-box {
+            background-color: white;
+            padding: 2rem 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .setup-box h2 { font-size: 1.8rem; margin-bottom: 1.5rem; color: #1e293b; }
+        .player-input-group { display: flex; align-items: center; margin-bottom: 1rem; }
+        .player-color-dot { width: 20px; height: 20px; border-radius: 50%; margin-right: 1rem; flex-shrink: 0; }
+        .player-input { border: 2px solid #cbd5e1; padding: 0.5rem; border-radius: 0.5rem; font-size: 1rem; }
+        #start-game-button { background-color: #2563eb; color: white; padding: 0.75rem 2rem; border-radius: 0.5rem; border: none; font-size: 1.1rem; cursor: pointer; margin-top: 1rem; transition: background-color 0.2s; }
+        #start-game-button:hover { background-color: #1d4ed8; }
+
+        /* 遊戲主容器 */
+        #game-container {
+            text-align: center;
+        }
+
+        #turn-indicator {
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            height: 40px;
+        }
+        #turn-indicator .player-name {
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            color: white;
+        }
+
+        /* 計分板樣式 */
+        #scoreboard {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .score-card {
+            background-color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .score-card .player-name {
+            font-weight: bold;
+            color: #1e293b;
+        }
+        .score-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+            min-width: 30px;
+        }
+        .score-controls button {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 0 0.25rem;
+        }
+        .score-plus { background-color: #22c55e; }
+        .score-minus { background-color: #ef4444; }
+
+
+        /* 動畫樣式 */
+    .grid-item button:active {
+        transform: scale(1.1);
+        box-shadow: 0 0 8px rgba(0,0,0,0.3);
+    }
+    .teacher-sound-button:active {
+        transform: scale(1.2) rotate(15deg);
+        box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+
+    /* Grid 佈局 */
+        .grid-container {
+            display: grid;
+            grid-template-areas:
+                'a b c d e f'
+                'x center center center center g'
+                'w center center center center h'
+                'v center center center center i'
+                'u center center center center j'
+                't s r q p o';
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(6, 96px);
+            gap: 6px;
+            width: 90vw; 
+            max-width: 922px;
+            margin: 0 auto;
+            background-color: #475569;
+            padding: 6px;
+            border-radius: 12px;
+        }
+
+        /* 語音格子的樣式 */
+        .grid-item {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #885f3a;
+            font-weight: bold;
+            padding: 0;
+            border-radius: 10px;
+            overflow: hidden; 
+        }
+        
+        .start-flag {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 24px;
+            height: 24px;
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        .footprints-container {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            display: flex;
+            flex-wrap: wrap;
+            padding: 2px;
+            pointer-events: none;
+        }
+        
+        .footprint {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid white;
+            margin: 2px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+        
+        .grid-item button {
+            width: 100%;
+            height: 100%;
+            border: none;
+            font-size: 19px;
+            font-weight: bold;
+            font-family: 'Times New Roman', serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2px;
+            border-radius: 8px;
+        }
+        
+        .grid-item button:hover {
+            filter: brightness(1.1);
+        }
+
+        .current-position {
+            box-shadow: 0 0 18px 6px #f59e0b;
+            transform: scale(1.05);
+            z-index: 20;
+            border-color: #f97316;
+        }
+        
+        .teacher-sound-button {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            width: 34px;
+            height: 34px;
+            background-color: #2563eb;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 22px;
+            font-family: sans-serif;
+            cursor: pointer;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            z-index: 5;
+            border: 2px solid white;
+        }
+        
+        .grid-item.teacher-ready .teacher-sound-button {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        #dice-area {
+            grid-area: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #1e293b;
+            border-radius: 10px;
+        }
+        
+        #dice-container {
+            cursor: pointer;
+            width: 144px;
+            height: 144px;
+        }
+        
+        @keyframes roll-animation {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(720deg); }
+        }
+        .rolling {
+            animation: roll-animation 0.7s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-wrapper">
+        <div id="setup-modal">
+            <div class="setup-box">
+                <h2>設定玩家稱號</h2>
+                <div id="player-inputs-container"></div>
+                <button id="start-game-button">開始遊戲</button>
+            </div>
+        </div>
+
+        <div id="game-container" style="visibility: hidden;">
+            <div id="turn-indicator"></div>
+            <div id="scoreboard"></div>
+            <div class="grid-container">
+                <div id="grid-a" class="grid-item" style="grid-area: a;" data-sound="C4"><div class="start-flag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ef4444"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z"></path></svg></div><button style="background-color:#8d6e63; color:white;">sefi</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749442258/sefi_ph7cnx.mp3">?</div></div>
+                <div id="grid-b" class="grid-item" style="grid-area: b;" data-sound="D4"><button style="background-color: #ffe8b3; color: #4a2e0e;">rayray</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439888/id4mwgegnnetu8iglwgx.mp3">?</div></div>
+                <div id="grid-c" class="grid-item" style="grid-area: c;" data-sound="E4"><button style="background-color:#fb8c00; color:white;">ko</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439887/tkbrtzkxvpiegesiaiyw.mp3">?</div></div>
+                <div id="grid-d" class="grid-item" style="grid-area: d;" data-sound="F4"><button style="background-color:#8d6e63; color:white;">kakomaenan</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439881/x0sxj5kuqeve1lo9ajzz.mp3">?</div></div>
+                <div id="grid-e" class="grid-item" style="grid-area: e;" data-sound="G4"><button style="background-color: #ffe8b3; color: #4a2e0e;">lalosidan</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439907/whrgid63vxbquenmuwr5.mp3">?</div></div>
+                <div id="grid-f" class="grid-item" style="grid-area: f;" data-sound="A4"><button style="background-color:#e63946; color:white;">mikesi'</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439923/eltnsn0kniynmsaqthsy.mp3">?</div></div>
+                <div id="grid-g" class="grid-item" style="grid-area: g;" data-sound="B4"><button style="background-color:#f48fb1; color:white;">malikoda</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439912/cczmxotbj7too61zkh0l.mp3">?</div></div>
+                <div id="grid-h" class="grid-item" style="grid-area: h;" data-sound="C5"><button style="background-color:#8d6e63; color:white;">taliyok no niyaro'</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439923/pjv3ctxi6nae54clzf1l.mp3">?</div></div>
+                <div id="grid-i" class="grid-item" style="grid-area: i;" data-sound="D5"><button style="background-color:#f48fb1; color:white;">makero</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439907/zpqdrexydvp9jp2uyztt.mp3">?</div></div>
+                <div id="grid-j" class="grid-item" style="grid-area: j;" data-sound="E5"><button style="background-color:#66bb6a; color:white;">romadiw</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439892/huiixmzlig360ergfigy.mp3">?</div></div>
+                <div id="grid-o" class="grid-item" style="grid-area: o;" data-sound="F5"><button style="background-color:#ba68c8; color:white;">pafata’an</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439940/anoxsk1wtz0mfyhbzc4q.mp3">?</div></div>
+                <div id="grid-p" class="grid-item" style="grid-area: p;" data-sound="G5"><button style="background-color:#e63946; color:white;">misahafay</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749441610/misahafay_ydbjro.mp3">?</div></div>
+                <div id="grid-q" class="grid-item" style="grid-area: q;" data-sound="A5"><button style="background-color:#ba68c8; color:white;">panemnem</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439944/iz44qubcuninbch9r847.mp3">?</div></div>
+                <div id="grid-r" class="grid-item" style="grid-area: r;" data-sound="B5"><button style="background-color: #ffe8b3; color: #4a2e0e;">tahidang</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439906/xrppr7m2ivhtukhvady3.mp3">?</div></div>
+                <div id="grid-s" class="grid-item" style="grid-area: s;" data-sound="C6"><button style="background-color:#ba68c8; color:white;">pacaedong</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439941/ysal2hktwdmpxzfmz8u7.mp3">?</div></div>
+                <div id="grid-t" class="grid-item" style="grid-area: t;" data-sound="D6"><button style="background-color:#e63946; color:white;">misatora</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439936/budzhu1tcotmzeyuqole.mp3">?</div></div>
+                <div id="grid-u" class="grid-item" style="grid-area: u;" data-sound="E6"><button style="background-color: #ffe8b3; color: #4a2e0e;">kaetohay</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439883/gedo3isxx8zb0edls1xx.mp3">?</div></div>
+                <div id="grid-v" class="grid-item" style="grid-area: v;" data-sound="F6"><button style="background-color:#fdd835; color:black;">miromromay</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439945/xyurqqe6wjxk4ifyw5mm.mp3">?</div></div>
+                <div id="grid-w" class="grid-item" style="grid-area: w;" data-sound="G6"><button style="background-color:#e63946; color:white;">mirekal</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439940/a35e21ivhlhfgacybqyi.mp3">?</div></div>
+                <div id="grid-x" class="grid-item" style="grid-area: x;" data-sound="A6"><button style="background-color: #ffe8b3; color: #4a2e0e;">kiloma’an</button><div class="footprints-container"></div><div class="teacher-sound-button" data-teacher-sound="https://res.cloudinary.com/dm1ksvptk/video/upload/v1749439897/dihhpywqbuwjqkazfpdq.mp3">?</div></div>
+                <div id="dice-area">
+                    <div id="dice-container" title="點我擲骰子">
+                        <svg id="dice-svg" viewBox="0 0 100 100"></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <audio id="teacher-audio-player" style="display: none;"></audio>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- 全局變數和設定 ---
+        const studentSynth = new Tone.Synth().toDestination();
+        const diceSynth = new Tone.MembraneSynth().toDestination();
+        const stepSynth = new Tone.PluckSynth().toDestination();
+        const teacherAudioPlayer = document.getElementById('teacher-audio-player');
+        
+        const path = ['a','b','c','d','e','f','g','h','i','j','o','p','q','r','s','t','u','v','w','x'];
+        const playerColors = ['#e11d48', '#2563eb', '#16a34a', '#f59e0b']; 
+        
+        let players = [];
+        let currentPlayerTurn = 0;
+        let isRolling = false;
+
+        // --- 元素獲取 ---
+        const setupModal = document.getElementById('setup-modal');
+        const playerInputsContainer = document.getElementById('player-inputs-container');
+        const startGameButton = document.getElementById('start-game-button');
+        const gameContainer = document.getElementById('game-container');
+        const turnIndicator = document.getElementById('turn-indicator');
+        const scoreboard = document.getElementById('scoreboard');
+        const diceContainer = document.getElementById('dice-container');
+        const diceSvg = document.getElementById('dice-svg');
+        
+        // --- 玩家設定畫面邏輯 ---
+        function createPlayerInputs(numPlayers = 4) {
+            playerInputsContainer.innerHTML = '';
+            for (let i = 0; i < numPlayers; i++) {
+                const inputGroup = document.createElement('div');
+                inputGroup.className = 'player-input-group';
+                
+                const colorDot = document.createElement('div');
+                colorDot.className = 'player-color-dot';
+                colorDot.style.backgroundColor = playerColors[i];
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'player-input';
+                input.placeholder = `玩家 ${i + 1} 稱號`;
+                input.id = `player-name-${i}`;
+                
+                inputGroup.appendChild(colorDot);
+                inputGroup.appendChild(input);
+                playerInputsContainer.appendChild(inputGroup);
+            }
+        }
+
+        function startGame() {
+            players = [];
+            const nameInputs = document.querySelectorAll('.player-input');
+            nameInputs.forEach((input, index) => {
+                if (input.value.trim() !== '') {
+                    players.push({
+                        name: input.value.trim(),
+                        position: 0,
+                        color: playerColors[index],
+                        score: 0 
+                    });
+                }
+            });
+
+            if (players.length === 0) {
+                alert('請至少輸入一位玩家的稱號！');
+                return;
+            }
+
+            setupModal.classList.add('hidden');
+            gameContainer.style.visibility = 'visible';
+            initializeGame();
+        }
+
+        // --- 遊戲核心邏輯 ---
+        function updateTurnIndicator() {
+            if (players.length === 0) return;
+            const currentPlayer = players[currentPlayerTurn];
+            turnIndicator.innerHTML = `輪到 <span class="player-name" style="background-color: ${currentPlayer.color};">${currentPlayer.name}</span> 擲骰子`;
+        }
+        
+        function renderScoreboard() {
+            scoreboard.innerHTML = '';
+            players.forEach((player, index) => {
+                const card = document.createElement('div');
+                card.className = 'score-card';
+                card.innerHTML = `<div class="player-color-dot" style="background-color: ${player.color}"></div><span class="player-name">${player.name}</span><span class="score-value" id="score-value-${index}">${player.score}</span><div class="score-controls"><button class="score-minus" data-player-index="${index}">-</button><button class="score-plus" data-player-index="${index}">+</button></div>`;
+                scoreboard.appendChild(card);
+            });
+            document.querySelectorAll('.score-plus').forEach(btn => btn.onclick = (e) => updateScore(e, 1));
+            document.querySelectorAll('.score-minus').forEach(btn => btn.onclick = (e) => updateScore(e, -1));
+        }
+        
+        function updateScore(event, amount) {
+            const playerIndex = event.target.dataset.playerIndex;
+            players[playerIndex].score += amount;
+            document.getElementById(`score-value-${playerIndex}`).textContent = players[playerIndex].score;
+        }
+
+        async function movePlayer(steps) {
+            const player = players[currentPlayerTurn];
+            const stepSound = ["F4", "G4", "A4", "B4", "C5", "D5"];
+            
+            document.querySelectorAll('.current-position').forEach(el => el.classList.remove('current-position'));
+            
+            let currentVisualPosition = player.position;
+            for(let i = 0; i < steps; i++) {
+                const nextVisualPosition = (currentVisualPosition + 1) % path.length;
+                const nextSquare = document.getElementById(`grid-${path[nextVisualPosition]}`);
+                
+                if (nextSquare) {
+                    nextSquare.classList.add('current-position');
+                    stepSynth.triggerAttackRelease(stepSound[i % stepSound.length], "16n", Tone.now());
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 250));
+                
+                if(i < steps - 1 && nextSquare) {
+                    nextSquare.classList.remove('current-position');
+                }
+                currentVisualPosition = nextVisualPosition;
+            }
+            
+            player.position = currentVisualPosition;
+            
+            const finalSquare = document.getElementById(`grid-${path[player.position]}`);
+            if (finalSquare) {
+                finalSquare.classList.add('current-position');
+    // 自動播放老師語音
+    const teacherBtn = finalSquare.querySelector('.teacher-sound-button');
+    if (teacherBtn) {
+        const audioUrl = teacherBtn.dataset.teacherSound;
+        if (audioUrl && audioUrl.startsWith('http')) {
+            teacherAudioPlayer.src = audioUrl;
+            teacherAudioPlayer.play().catch(err => console.error("語音播放錯誤", err));
+        }
+    }
+
+                const footprint = document.createElement('div');
+                footprint.className = 'footprint';
+                footprint.style.backgroundColor = player.color;
+                finalSquare.querySelector('.footprints-container').appendChild(footprint);
+                showTeacherButton(finalSquare);
+                const note = finalSquare.dataset.sound || 'C4';
+                setTimeout(() => studentSynth.triggerAttackRelease(note, '8n'), 100);
+            }
+
+            currentPlayerTurn = (currentPlayerTurn + 1) % players.length;
+            updateTurnIndicator();
+        }
+        
+        function handleDiceRoll() {
+            if (isRolling) return;
+            isRolling = true;
+            Tone.start();
+            diceSynth.triggerAttackRelease("C2", "8n");
+
+            diceContainer.classList.add('rolling');
+            
+            // 【新增】骰子閃爍效果
+            let flashInterval = setInterval(() => {
+                const randomFace = Math.floor(Math.random() * 6) + 1;
+                updateDiceFace(randomFace);
+            }, 60);
+
+            setTimeout(() => {
+                clearInterval(flashInterval); // 停止閃爍
+                const randomNumber = Math.floor(Math.random() * 6) + 1;
+                updateDiceFace(randomNumber);
+                movePlayer(randomNumber).then(() => {
+                    isRolling = false;
+                });
+                diceContainer.classList.remove('rolling');
+            }, 700);
+        }
+
+        function updateDiceFace(number) {
+            const patterns = {1: ['dot-mc'], 2: ['dot-tl', 'dot-br'], 3: ['dot-tl', 'dot-mc', 'dot-br'], 4: ['dot-tl', 'dot-tr', 'dot-bl', 'dot-br'], 5: ['dot-tl', 'dot-tr', 'dot-bl', 'dot-br', 'dot-mc'], 6: ['dot-tl', 'dot-tr', 'dot-bl', 'dot-br', 'dot-ml', 'dot-mr']};
+            const dotsContainer = diceSvg.querySelector('#dots-container');
+            if(dotsContainer) dotsContainer.innerHTML = '';
+            if(patterns[number]) {
+                patterns[number].forEach(dotId => {
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    const positions = {'dot-tl': {cx: 30, cy: 30}, 'dot-ml': {cx: 30, cy: 50}, 'dot-bl': {cx: 30, cy: 70}, 'dot-mc': {cx: 50, cy: 50}, 'dot-tr': {cx: 70, cy: 30}, 'dot-mr': {cx: 70, cy: 50}, 'dot-br': {cx: 70, cy: 70}};
+                    circle.setAttribute('cx', positions[dotId].cx);
+                    circle.setAttribute('cy', positions[dotId].cy);
+                    circle.setAttribute('r', 8);
+                    circle.setAttribute('fill', '#422006');
+                    dotsContainer.appendChild(circle);
+                });
+            }
+        }
+        
+        function showTeacherButton(targetItem) {
+            document.querySelectorAll('.grid-item').forEach(item => item.classList.remove('teacher-ready'));
+            targetItem.classList.add('teacher-ready');
+        }
+
+        document.querySelectorAll('.grid-item button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                Tone.start();
+                const parentItem = e.currentTarget.parentElement;
+                const studentNote = parentItem.dataset.sound || 'C4';
+                studentSynth.triggerAttackRelease(studentNote, '8n');
+                showTeacherButton(parentItem);
+            });
+        });
+
+        document.querySelectorAll('.teacher-sound-button').forEach(teacherButton => {
+            teacherButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                Tone.start();
+                const audioUrl = e.currentTarget.dataset.teacherSound;
+                if (audioUrl && audioUrl.startsWith('http')) {
+                    if(!teacherAudioPlayer.paused) {
+                        teacherAudioPlayer.pause();
+                        teacherAudioPlayer.currentTime = 0;
+                    }
+                    teacherAudioPlayer.src = audioUrl;
+                    teacherAudioPlayer.play().catch(error => console.error("音訊播放錯誤:", error));
+                } else {
+                    studentSynth.triggerAttackRelease('A2', '8n');
+                }
+            });
+        });
+        
+        startGameButton.addEventListener('click', startGame);
+        diceContainer.addEventListener('click', handleDiceRoll);
+
+        function initializeGame() {
+            diceSvg.innerHTML = `<rect width="100" height="100" rx="15" fill="#f59e0b" stroke="#422006" stroke-width="4"></rect><path d="M 10 20 L 20 10 L 30 20 L 40 10 L 50 20 L 60 10 L 70 20 L 80 10 L 90 20" fill="none" stroke="#422006" stroke-width="2.5"></path><path d="M 10 80 L 20 90 L 30 80 L 40 90 L 50 80 L 60 90 L 70 80 L 80 90 L 90 80" fill="none" stroke="#422006" stroke-width="2.5"></path><g id="dots-container"></g>`;
+            updateDiceFace(1);
+            updateTurnIndicator();
+            renderScoreboard();
+        }
+        
+        createPlayerInputs(4);
+    });
+    </script>
+</body>
+</html>
